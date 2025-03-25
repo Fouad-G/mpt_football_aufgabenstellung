@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import numpy as np
 
 class Detector:
-    def __init__(self, model_path="yolov8x.pt", conf_threshold=0.01):
+    def __init__(self, model_path="yolov8x.pt", conf_threshold=0.1):
         self.name = "Detector"
         self.model_path = model_path
         self.conf_threshold = conf_threshold
