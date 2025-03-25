@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import numpy as np
 
 class Detector:
-    def __init__(self, model_path="yolov8x.pt", conf_threshold=0.1):
+    def __init__(self, model_path="yolov8m-football.pt", conf_threshold=0.1):
         self.name = "Detector"
         self.model_path = model_path
         self.conf_threshold = conf_threshold
@@ -27,10 +27,8 @@ class Detector:
             if conf < self.conf_threshold:
                 continue
 
-            if cls == 0:
-                mapped_cls = 2
-            elif cls == 32:
-                mapped_cls = 0
+            if cls in [0, 1, 2, 3]:
+                mapped_cls = cls
             else:
                 continue
 
