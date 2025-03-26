@@ -11,7 +11,7 @@ class Detector:
         self.model = YOLO(self.model_path)
 
     def stop(self, data):
-        pass  # nichts nötig
+        pass
 
     def step(self, data):
         image = data["image"]
@@ -22,19 +22,17 @@ class Detector:
         classes = []
 
         for box in boxes:
-            cls = int(box.cls)
+            cls_id = int(box.cls)
             conf = float(box.conf)
             if conf < self.conf_threshold:
                 continue
 
-            if cls in [0, 1, 2, 3]:
-                mapped_cls = cls
+            if cls_id in [0, 1, 2, 3]:
+                xywh = box.xywh[0].cpu().numpy()
+                detections.append(xywh)
+                classes.append(cls_id)
             else:
                 continue
-
-            xywh = box.xywh[0].cpu().numpy()
-            detections.append(xywh)
-            classes.append(mapped_cls)
 
         if detections:
             detections = np.stack(detections)
@@ -42,11 +40,12 @@ class Detector:
         else:
             detections = np.zeros((0, 4))
             classes = np.zeros((0,), dtype=int)
-
-        return {
+        results = {
             "detections": detections,
             "classes": classes
         }
+        return results
+
 
         # TODO: Implement processing of a single frame
         # The task of the detector is to detect the ball, the goal keepers, the players and the referees if visible.

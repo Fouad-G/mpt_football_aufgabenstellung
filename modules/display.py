@@ -111,50 +111,84 @@ class Display:
         return frame
     
     def drawTracks(self, frame, data):
+        import cv2 as cv
+        # Basis-Daten aus dem data-Dictionary lesen:
         if "tracks" in data:
-          tracks = data["tracks"]
-          velocities = data["trackVelocities"]
-          ages = data["trackAge"]
-          classes = data["trackClasses"]
-          teamClasses = data["teamClasses"]
-          teamAColor = data["teamAColor"]
-          teamBColor = data["teamBColor"]
+            tracks = data["tracks"]
+            velocities = data["trackVelocities"]
+            ages = data["trackAge"]
+            classes = data["trackClasses"]
+            # teamClasses sollte eine Liste mit Werten sein: +1 für Team A, -1 für Team B, 0 für unbekannt
+            teamClasses = data.get("teamClasses", [0] * len(tracks))
+            teamAColor = data.get("teamAColor", (255, 0, 0))  # z. B. Standard: Rot
+            teamBColor = data.get("teamBColor", (0, 255, 0))  # z. B. Standard: Grün
         else:
-          tracks = []
+            tracks = []
+            velocities = []
+            ages = []
+            classes = []
+            teamClasses = []
+            teamAColor = (255, 0, 0)
+            teamBColor = (0, 255, 0)
 
-        for index, (_x,_y,_w,_h ) in enumerate(tracks):
-            team = teamClasses[index]
-            cls = classes[index]
-            if cls == 0: ## Ball
-                _w *= 2.0 # Draw the ball bigger
+        for index, (_x, _y, _w, _h) in enumerate(tracks):
+            # Lies die Detektionsklasse (0: Ball, 1: GoalKeeper, 2: Player, 3: Referee)
+            cls = classes[index] if index < len(classes) else 0
+
+            if cls == 0:  # Ball
+                _w *= 2.0  # Ball größer zeichnen
                 _h *= 2.0
-                color = (255,255,255)
-            if cls == 2:
-              color = (255,0,0) # Player
-              if team == 1:
-                  color = teamAColor
-              if team == -1:
-                  color = teamBColor
-            if cls == 1: # GoalKeeper
-                color = (0,128,255)
-            if cls == 3: # Referee
-                color = (64,64,64)
+                color = (255, 255, 255)
+            elif cls == 1:  # GoalKeeper
+                color = (0, 128, 255)
+            elif cls == 2:  # Player
+                # Für Spieler: nutze die Teamzuordnung aus teamClasses
+                if index < len(teamClasses):
+                    team_assignment = teamClasses[index]
+                    if team_assignment == 1:
+                        color = teamAColor
+                    elif team_assignment == -1:
+                        color = teamBColor
+                    else:
+                        # Falls kein Team entschieden wurde, Standardfarbe (z. B. Orange)
+                        color = (0, 165, 255)
+                else:
+                    color = (0, 165, 255)
+            elif cls == 3:  # Referee
+                color = (64, 64, 64)
+            else:
+                color = (255, 255, 255)
 
-            x, y, w, h = int(_x - _w/2.0), int(_y - _h/2.0), int(_w), int(_h)
+            x = int(_x - _w / 2.0)
+            y = int(_y - _h / 2.0)
+            w = int(_w)
+            h = int(_h)
 
-            footX, footY = int(_x), int(_y + _h/2.0 + 4.0)
-            velX, velY = int(_x + 5.0 * velocities[index][0]), int(4.0 + _y + _h/2.0 + 5.0 * velocities[index][1])
-            
-            cv.rectangle(frame, (x,y), (x+w,y+h), color, 2)
+            # Berechne optional Fußpunkt und Geschwindigkeit
+            footX = int(_x)
+            footY = int(_y + _h / 2.0 + 4.0)
+            velX = int(_x + 5.0 * velocities[index][0])
+            velY = int(4.0 + _y + _h / 2.0 + 5.0 * velocities[index][1])
+
+            cv.rectangle(frame, (x, y), (x + w, y + h), color, 2)
             cv.circle(frame, (footX, footY), 3, color, -1)
             cv.line(frame, (footX, footY), (velX, velY), color, 1)
 
+            # Beschriftung (z. B. Track-Age)
             boxLabel = f"{ages[index]}"
             fontSize = cv.getTextSize(boxLabel, cv.FONT_HERSHEY_DUPLEX, 0.5, 1)[0]
-            cv.rectangle(frame, (footX-fontSize[0]//2, footY+8), (footX+fontSize[0]//2, footY+24), (16,32,128), -1)
-            cv.putText(frame, boxLabel, (footX-fontSize[0]//2, footY+20), cv.FONT_HERSHEY_DUPLEX, 0.5, (255,255, 255), 1)     
-        
+            cv.rectangle(frame,
+                        (footX - fontSize[0] // 2, footY + 8),
+                        (footX + fontSize[0] // 2, footY + 24),
+                        (16, 32, 128), -1)
+            cv.putText(frame, boxLabel, (footX - fontSize[0] // 2, footY + 20),
+                    cv.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
+
         return frame
+
+
+
+
     
     def drawOpticalFlow(self, frame, data):
         cx = frame.shape[1] / 2

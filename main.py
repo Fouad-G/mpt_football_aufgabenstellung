@@ -12,9 +12,9 @@ engine = Engine(
   modules=[
     VideoReader(targetSize=shape),
     recordReplayMultiplex(Detector(), RRPlexMode.BYPASS),
-    recordReplayMultiplex(OpticalFlow(), RRPlexMode.REPLAY),
-    recordReplayMultiplex(Tracker(), RRPlexMode.REPLAY),
-    recordReplayMultiplex(ShirtClassifier(), RRPlexMode.REPLAY),
+    recordReplayMultiplex(OpticalFlow(), RRPlexMode.BYPASS),
+    recordReplayMultiplex(Tracker(), RRPlexMode.BYPASS),
+    recordReplayMultiplex(ShirtClassifier(), RRPlexMode.BYPASS),
     Display(historyBufferSize=1000)
     ],
   signals={
@@ -33,6 +33,5 @@ engine = Engine(
     "testout": int
   })
 
-data = { "video": 'videos/1.mp4' }
+data = { "video": 'videos/2.mp4' }
 signals = engine.run(data)
-
