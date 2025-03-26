@@ -1,9 +1,4 @@
 import numpy as np
-# DeepSORT-ReID-Import:
-from deep_sort_realtime.deepsort_tracker import DeepSort
-
-import numpy as np
-# DeepSORT-ReID-Import:
 from deep_sort_realtime.deepsort_tracker import DeepSort
 
 class Tracker:
