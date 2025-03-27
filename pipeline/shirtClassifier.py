@@ -10,10 +10,9 @@ class ShirtClassifier:
 
     def start(self, data):
         print("[INFO] Shirt Classifier wurde gestartet.")
-        pass
 
     def stop(self, data):
-        pass
+        print("[INFO] Shirt Classifier wurde gestoppt.")
 
     def step(self, data):
         """

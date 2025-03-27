@@ -25,6 +25,7 @@ class OpticalFlow:
         self.prev_gray = None
 
     def stop(self, data):
+        print("[INFO] Optical Flow wurde gestoppt.")
         self.prev_gray = None
 
     def step(self, data):

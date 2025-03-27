@@ -13,7 +13,7 @@ class Detector:
         self.model = YOLO(self.model_path)
 
     def stop(self, data):
-        pass
+        print("[INFO] YOLOv8 Detector wurde gestoppt.")
 
     def step(self, data):
         image = data["image"]
