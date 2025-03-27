@@ -110,7 +110,6 @@ class ShirtClassifier:
             "teamClasses": team_classes
         }
 
-        print(result)
         return result
 
     # def step(self, data):
