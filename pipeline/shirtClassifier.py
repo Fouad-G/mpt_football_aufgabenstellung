@@ -3,7 +3,10 @@ from sklearn.cluster import KMeans
 
 class ShirtClassifier:
     def __init__(self):
-        self.name = "Shirt Classifier"  # Do not change the name of the module!
+        self.name = "Shirt Classifier"
+        self.reference_colors = None  # Save cluster centers from first good frame
+        self.reference_labels = None  # Save label to team mapping
+
 
     def start(self, data):
         pass
@@ -14,19 +17,20 @@ class ShirtClassifier:
     def step(self, data):
         """
         Automatische Zweiteilung der (Spieler-)Trikot-Farben mittels K-Means (n_clusters=2).
-        Alle Spieler/Torwarte werden in zwei Gruppen aufgeteilt:
-          - Cluster 0 => Team A (+1)
-          - Cluster 1 => Team B (-1)
+        Farblich konsistente Teamzuordnung:
+        - Team A ist immer ROT
+        - Team B ist immer BLAU
         """
         frame = data.get("image", None)
         tracks = data.get("tracks", np.zeros((0, 4)))
         track_classes = data.get("trackClasses", [])
-        
-        team_a_color = (0, 0, 255)
-        team_b_color = (255, 0, 0)
+
+        # Feste Teamfarben (BGR)
+        team_a_color = (0, 0, 255)   # ROT
+        team_b_color = (255, 0, 0)   # BLAU
 
         team_classes = [0] * len(tracks)
-        
+
         if frame is None or len(tracks) == 0:
             return {
                 "teamAColor": team_a_color,
@@ -35,15 +39,11 @@ class ShirtClassifier:
             }
 
         height, width, _ = frame.shape
-
         player_colors = []
         player_indices = []
-        
+
         for i, (x_center, y_center, w, h) in enumerate(tracks):
-            if i < len(track_classes):
-                cls = track_classes[i]
-            else:
-                cls = 0
+            cls = track_classes[i] if i < len(track_classes) else 0
             if cls not in [1, 2]:
                 team_classes[i] = 0
                 continue
@@ -82,13 +82,28 @@ class ShirtClassifier:
         X = np.array(player_colors, dtype=np.float32)
         kmeans = KMeans(n_clusters=2, random_state=0, n_init='auto').fit(X)
         labels = kmeans.labels_
+        centers = kmeans.cluster_centers_
+
+        desired_team_a_color = np.array([0, 0, 255], dtype=np.float32)   # ROT
+        desired_team_b_color = np.array([255, 0, 0], dtype=np.float32)   # BLAU
+
+        dist_to_a = np.linalg.norm(centers - desired_team_a_color, axis=1)
+        dist_to_b = np.linalg.norm(centers - desired_team_b_color, axis=1)
+
+        if np.argmin(dist_to_a) != np.argmin(dist_to_b):
+            cluster_for_a = int(np.argmin(dist_to_a))
+            cluster_for_b = int(np.argmin(dist_to_b))
+            label_map = {
+                cluster_for_a: 1,    # Team A (rot)
+                cluster_for_b: -1    # Team B (blau)
+            }
+        else:
+            label_map = {0: 1, 1: -1}
 
         for idx, cluster_label in enumerate(labels):
             track_index = player_indices[idx]
-            if cluster_label == 0:
-                team_classes[track_index] = 1
-            else:
-                team_classes[track_index] = -1
+            team_classes[track_index] = label_map[cluster_label]
+
         result = {
             "teamAColor": team_a_color,
             "teamBColor": team_b_color,

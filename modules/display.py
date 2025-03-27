@@ -178,10 +178,6 @@ class Display:
                     cv.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
 
         return frame
-
-
-
-
     
     def drawOpticalFlow(self, frame, data):
         cx = frame.shape[1] / 2
