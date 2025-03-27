@@ -8,6 +8,7 @@ class Detector:
         self.conf_threshold = conf_threshold
 
     def start(self, data):
+        print("[INFO] YOLOv8 Detector wurde gestartet.")
         self.model = YOLO(self.model_path)
 
     def stop(self, data):

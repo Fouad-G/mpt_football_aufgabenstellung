@@ -18,6 +18,7 @@ class OpticalFlow:
             self.gpu_flow = cv.cuda_FarnebackOpticalFlow.create(5, 0.5, False, 15, 3, 5, 1.2, 0)
 
     def start(self, data):
+        print("[INFO] Optical Flow wurde gestartet.")
         self.prev_gray = None
 
     def stop(self, data):
