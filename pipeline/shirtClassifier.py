@@ -1,12 +1,12 @@
 import numpy as np
 from sklearn.cluster import KMeans
 
+
 class ShirtClassifier:
     def __init__(self):
         self.name = "Shirt Classifier"
         self.reference_colors = None  # Save cluster centers from first good frame
         self.reference_labels = None  # Save label to team mapping
-
 
     def start(self, data):
         print("[INFO] Shirt Classifier wurde gestartet.")
@@ -27,8 +27,8 @@ class ShirtClassifier:
         track_classes = data.get("trackClasses", [])
 
         # Feste Teamfarben (BGR)
-        team_a_color = (0, 0, 255)   # ROT
-        team_b_color = (255, 0, 0)   # BLAU
+        team_a_color = (0, 0, 255)  # ROT
+        team_b_color = (255, 0, 0)  # BLAU
 
         team_classes = [0] * len(tracks)
 
@@ -36,7 +36,7 @@ class ShirtClassifier:
             return {
                 "teamAColor": team_a_color,
                 "teamBColor": team_b_color,
-                "teamClasses": team_classes
+                "teamClasses": team_classes,
             }
 
         height, width, _ = frame.shape
@@ -77,16 +77,16 @@ class ShirtClassifier:
             return {
                 "teamAColor": team_a_color,
                 "teamBColor": team_b_color,
-                "teamClasses": team_classes
+                "teamClasses": team_classes,
             }
 
         X = np.array(player_colors, dtype=np.float32)
-        kmeans = KMeans(n_clusters=2, random_state=0, n_init='auto').fit(X)
+        kmeans = KMeans(n_clusters=2, random_state=0, n_init="auto").fit(X)
         labels = kmeans.labels_
         centers = kmeans.cluster_centers_
 
-        desired_team_a_color = np.array([0, 0, 255], dtype=np.float32)   # ROT
-        desired_team_b_color = np.array([255, 0, 0], dtype=np.float32)   # BLAU
+        desired_team_a_color = np.array([0, 0, 255], dtype=np.float32)  # ROT
+        desired_team_b_color = np.array([255, 0, 0], dtype=np.float32)  # BLAU
 
         dist_to_a = np.linalg.norm(centers - desired_team_a_color, axis=1)
         dist_to_b = np.linalg.norm(centers - desired_team_b_color, axis=1)
@@ -95,8 +95,8 @@ class ShirtClassifier:
             cluster_for_a = int(np.argmin(dist_to_a))
             cluster_for_b = int(np.argmin(dist_to_b))
             label_map = {
-                cluster_for_a: 1,    # Team A (rot)
-                cluster_for_b: -1    # Team B (blau)
+                cluster_for_a: 1,  # Team A (rot)
+                cluster_for_b: -1,  # Team B (blau)
             }
         else:
             label_map = {0: 1, 1: -1}
@@ -108,7 +108,7 @@ class ShirtClassifier:
         result = {
             "teamAColor": team_a_color,
             "teamBColor": team_b_color,
-            "teamClasses": team_classes
+            "teamClasses": team_classes,
         }
 
         return result

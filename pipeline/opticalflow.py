@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 
+
 class OpticalFlow:
     def __init__(self, scale_factor=0.5, mirror=True, use_gpu=False):
         """
@@ -15,7 +16,9 @@ class OpticalFlow:
         self.use_gpu = use_gpu
 
         if self.use_gpu:
-            self.gpu_flow = cv.cuda_FarnebackOpticalFlow.create(5, 0.5, False, 15, 3, 5, 1.2, 0)
+            self.gpu_flow = cv.cuda_FarnebackOpticalFlow.create(
+                5, 0.5, False, 15, 3, 5, 1.2, 0
+            )
 
     def start(self, data):
         print("[INFO] Optical Flow wurde gestartet.")
@@ -30,7 +33,13 @@ class OpticalFlow:
             return {"opticalFlow": None}
 
         if self.scale_factor != 1.0:
-            frame = cv.resize(frame, (0, 0), fx=self.scale_factor, fy=self.scale_factor, interpolation=cv.INTER_LINEAR)
+            frame = cv.resize(
+                frame,
+                (0, 0),
+                fx=self.scale_factor,
+                fy=self.scale_factor,
+                interpolation=cv.INTER_LINEAR,
+            )
 
         if self.mirror:
             frame = cv.flip(frame, 1)
@@ -47,7 +56,9 @@ class OpticalFlow:
             d_flow = self.gpu_flow.calc(d_prev_gray, d_gray, None)
             flow = d_flow.download()
         else:
-            flow = cv.calcOpticalFlowFarneback(self.prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            flow = cv.calcOpticalFlowFarneback(
+                self.prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0
+            )
 
         avg_flow = np.mean(flow, axis=(0, 1)) / self.scale_factor
 

@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import numpy as np
 
+
 class Detector:
     def __init__(self, model_path="yolov8m-football.pt", conf_threshold=0.1):
         self.name = "Detector"
@@ -41,18 +42,14 @@ class Detector:
         else:
             detections = np.zeros((0, 4))
             classes = np.zeros((0,), dtype=int)
-        results = {
-            "detections": detections,
-            "classes": classes
-        }
+        results = {"detections": detections, "classes": classes}
         return results
-
 
         # TODO: Implement processing of a single frame
         # The task of the detector is to detect the ball, the goal keepers, the players and the referees if visible.
-        # A bounding box needs to be defined for each detected object including the objects center position (X,Y) and its width and height (W, H) 
-        # You can return an arbitrary number of objects 
-        
+        # A bounding box needs to be defined for each detected object including the objects center position (X,Y) and its width and height (W, H)
+        # You can return an arbitrary number of objects
+
         # Note: You can access data["image"] to receive the current image
         # Return a dictionary with detections and classes
         #
