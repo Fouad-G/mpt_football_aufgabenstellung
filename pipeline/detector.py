@@ -1,3 +1,4 @@
+from ultralytics import YOLO
 class Detector:
     def __init__(self):
         self.name = "Detector" # Do not change the name of the module as otherwise recording replay would break!
@@ -34,3 +35,8 @@ class Detector:
             "detections": None,
             "classes": None
         }
+    
+    def initialise_yolo():
+        model = YOLO("yolo11n.pt")
+        results = model("path_to_video.mp4")
+        results.show()  
