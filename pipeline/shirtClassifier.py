@@ -4,11 +4,13 @@ class ShirtClassifier:
 
     def start(self, data):
         # TODO: Implement start up procedure of the module
-        pass
+        print("[ShirtClassifier] Module started.")
+        self.initialized = True
 
     def stop(self, data):
         # TODO: Implement shut down procedure of the module
-        pass
+        print("[ShirtClassifier] Module stopped.")
+        self.initialized = False
 
     def step(self, data):
         # TODO: Implement processing of a current frame list
@@ -22,6 +24,6 @@ class ShirtClassifier:
         #           0: Team not decided or not a player (e.g. ball, goal keeper, referee)
         #           1: Player belongs to team A
         #           2: Player belongs to team B
-        return { "teamAColor": None,
-                 "teamBColor": None,
-                 "teamClasses": None }
+        return { "teamAColor": (0, 0, 255),
+                 "teamBColor": (0, 255, 0),
+                 "teamClasses": [0 for _ in data["tracks"]] }
