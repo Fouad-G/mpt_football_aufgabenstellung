@@ -24,6 +24,12 @@ class ShirtClassifier:
         #           0: Team not decided or not a player (e.g. ball, goal keeper, referee)
         #           1: Player belongs to team A
         #           2: Player belongs to team B
+        image = data["image"]
+        tracks = data["tracks"]
+        track_classes = data.get("trackClasses", [])
+
+        # print("Frame received")
+        # print("Number of tracks:", len(tracks))
         return { "teamAColor": (0, 0, 255),
                  "teamBColor": (0, 255, 0),
                  "teamClasses": [0 for _ in data["tracks"]] }
