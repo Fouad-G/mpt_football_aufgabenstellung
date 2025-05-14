@@ -24,10 +24,17 @@ class ShirtClassifier:
         #           0: Team not decided or not a player (e.g. ball, goal keeper, referee)
         #           1: Player belongs to team A
         #           2: Player belongs to team B
+
         image = data["image"]
         tracks = data["tracks"]
         track_classes = data.get("trackClasses", [])
 
+        player_indices = []
+        for i, cls in enumerate(track_classes):
+            if cls == 2:
+                player_indices.append(i)
+
+        # print("[ShirtClassifier] Spieler gefunden:", player_indices)
         # print("Frame received")
         # print("Number of tracks:", len(tracks))
         return { "teamAColor": (0, 0, 255),
