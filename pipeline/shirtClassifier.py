@@ -33,6 +33,15 @@ class ShirtClassifier:
         for i, cls in enumerate(track_classes):
             if cls == 2:
                 player_indices.append(i)
+        
+        for i in player_indices:
+            x, y, w, h = tracks[i].astype(int)
+            x1 = max(x - w // 4, 0)
+            y1 = max(y - h // 4, 0)
+            x2 = min(x + w // 4, image.shape[1])
+            y2 = min(y + h // 4, image.shape[0])
+            roi = image[y1:y2, x1:x2]
+
 
         # print("[ShirtClassifier] Spieler gefunden:", player_indices)
         # print("Frame received")
