@@ -1,3 +1,6 @@
+import numpy as np
+import cv2
+
 class ShirtClassifier:
     def __init__(self):
         self.name = "Shirt Classifier" # Do not change the name of the module as otherwise recording replay would break!
@@ -27,13 +30,15 @@ class ShirtClassifier:
 
         image = data["image"]
         tracks = data["tracks"]
-        track_classes = data.get("trackClasses", [])
+        track_classes = data.get("trackClasses", [2] * len(tracks))  # fallback falls nicht gesetzt
 
         player_indices = []
+        shirt_colors = []
+
         for i, cls in enumerate(track_classes):
             if cls == 2:
                 player_indices.append(i)
-        
+
         for i in player_indices:
             x, y, w, h = tracks[i].astype(int)
             x1 = max(x - w // 4, 0)
@@ -42,10 +47,21 @@ class ShirtClassifier:
             y2 = min(y + h // 4, image.shape[0])
             roi = image[y1:y2, x1:x2]
 
+            if roi.size == 0:
+                continue
+
+            avg_color = np.mean(roi.reshape(-1, 3), axis=0)
+
+            if np.isnan(avg_color).any():
+                continue
+
+            shirt_colors.append(avg_color)
 
         # print("[ShirtClassifier] Spieler gefunden:", player_indices)
         # print("Frame received")
         # print("Number of tracks:", len(tracks))
-        return { "teamAColor": (0, 0, 255),
-                 "teamBColor": (0, 255, 0),
-                 "teamClasses": [0 for _ in data["tracks"]] }
+        return {
+            "teamAColor": (0, 0, 255),  # Dummy: Rot
+            "teamBColor": (0, 255, 0),  # Dummy: Grün
+            "teamClasses": [0 for _ in data["tracks"]]
+        }
