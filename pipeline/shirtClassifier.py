@@ -69,11 +69,15 @@ class ShirtClassifier:
         kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(shirt_colors)
         team_colors = kmeans.cluster_centers_
 
+        team_classes = [0] * len(tracks)
+        for idx, label in zip(player_indices, kmeans.labels_):
+            team_classes[idx] = label + 1
+
         # print("[ShirtClassifier] Spieler gefunden:", player_indices)
         # print("Frame received")
         # print("Number of tracks:", len(tracks))
         return {
             "teamAColor": tuple(map(int, team_colors[0])),
             "teamBColor": tuple(map(int, team_colors[1])),
-            "teamClasses": [0 for _ in data["tracks"]]  # TODO in Tag 8
+            "teamClasses": team_classes
         }
