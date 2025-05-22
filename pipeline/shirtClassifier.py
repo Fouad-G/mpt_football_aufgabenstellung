@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from sklearn.cluster import KMeans
 
 class ShirtClassifier:
     def __init__(self):
@@ -57,11 +58,22 @@ class ShirtClassifier:
 
             shirt_colors.append(avg_color)
 
+        if len(shirt_colors) < 2:
+            return {
+                "teamAColor": None,
+                "teamBColor": None,
+                "teamClasses": [0 for _ in data["tracks"]]
+            }
+
+        shirt_colors = np.array(shirt_colors)
+        kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(shirt_colors)
+        team_colors = kmeans.cluster_centers_
+
         # print("[ShirtClassifier] Spieler gefunden:", player_indices)
         # print("Frame received")
         # print("Number of tracks:", len(tracks))
         return {
-            "teamAColor": (0, 0, 255),  # Dummy: Rot
-            "teamBColor": (0, 255, 0),  # Dummy: Grün
-            "teamClasses": [0 for _ in data["tracks"]]
+            "teamAColor": tuple(map(int, team_colors[0])),
+            "teamBColor": tuple(map(int, team_colors[1])),
+            "teamClasses": [0 for _ in data["tracks"]]  # TODO in Tag 8
         }
