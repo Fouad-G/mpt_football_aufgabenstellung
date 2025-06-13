@@ -5,6 +5,9 @@ from sklearn.cluster import KMeans
 class ShirtClassifier:
     def __init__(self):
         self.name = "Shirt Classifier" # Do not change the name of the module as otherwise recording replay would break!
+        self.initialized = False
+        self.teamAColor = None
+        self.teamBColor = None
 
     def start(self, data):
         # TODO: Implement start up procedure of the module
@@ -52,11 +55,8 @@ class ShirtClassifier:
                 continue
 
             avg_color = np.mean(roi.reshape(-1, 3), axis=0)
-
-            if np.isnan(avg_color).any():
-                continue
-
-            shirt_colors.append(avg_color)
+            if not np.isnan(avg_color).any():
+                shirt_colors.append((i, avg_color))
 
         if len(shirt_colors) < 2:
             return {
@@ -65,19 +65,31 @@ class ShirtClassifier:
                 "teamClasses": [0 for _ in data["tracks"]]
             }
 
-        shirt_colors = np.array(shirt_colors)
-        kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(shirt_colors)
-        team_colors = kmeans.cluster_centers_
-
         team_classes = [0] * len(tracks)
-        for idx, label in zip(player_indices, kmeans.labels_):
-            team_classes[idx] = label + 1
+
+        if self.teamAColor is None or self.teamBColor is None:
+            colors = np.array([color for _, color in shirt_colors])
+            kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(colors)
+            c0, c1 = kmeans.cluster_centers_
+
+            if np.sum(c0) < np.sum(c1):
+                self.teamAColor, self.teamBColor = c0, c1
+            else:
+                self.teamAColor, self.teamBColor = c1, c0
+
+        for i, color in shirt_colors:
+            distA = np.linalg.norm(color - self.teamAColor)
+            distB = np.linalg.norm(color - self.teamBColor)
+            if min(distA, distB) > 100:
+                team_classes[i] = 0
+            else:
+                team_classes[i] = 1 if distA < distB else 2
 
         # print("[ShirtClassifier] Spieler gefunden:", player_indices)
         # print("Frame received")
         # print("Number of tracks:", len(tracks))
         return {
-            "teamAColor": tuple(map(int, team_colors[0])),
-            "teamBColor": tuple(map(int, team_colors[1])),
+            "teamAColor": tuple(map(int, self.teamAColor)),
+            "teamBColor": tuple(map(int, self.teamBColor)),
             "teamClasses": team_classes
         }
