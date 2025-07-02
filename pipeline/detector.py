@@ -1,42 +1,54 @@
 from ultralytics import YOLO
+import torch
+import numpy as np
+import os
+
 class Detector:
     def __init__(self):
-        self.name = "Detector" # Do not change the name of the module as otherwise recording replay would break!
+        self.name = "Detector"
+        self.model = None
+
+    def initialise_yolo(self):
+        model_path = "/Users/jule/Documents/Uni/4. Semester/Machine Perception und Tracking/mpt_football_aufgabenstellung/yolov8n-football.pt"
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file {model_path} not found. Please download it.")
+        self.model = YOLO(model_path)
 
     def start(self, data):
-        # TODO: Implement start up procedure of the module
-        pass
+        if self.model is None:
+            self.initialise_yolo()
 
     def stop(self, data):
-        # TODO: Implement shut down procedure of the module
-        pass
+        self.model = None
 
     def step(self, data):
-        # TODO: Implement processing of a single frame
-        # The task of the detector is to detect the ball, the goal keepers, the players and the referees if visible.
-        # A bounding box needs to be defined for each detected object including the objects center position (X,Y) and its width and height (W, H) 
-        # You can return an arbitrary number of objects 
-        
-        # Note: You can access data["image"] to receive the current image
-        # Return a dictionary with detections and classes
-        #
-        # Detections must be a Nx4 NumPy Tensor, one 4-dimensional vector per detection
-        # The detection vector itself is encoded as (X, Y, W, H), so X and Y coordinate first, then width and height of each detection box.
-        # X and Y coordinates are the center point of the object, so the bounding box is drawn from (X - W/2, Y - H/2) to (X + W/2, Y + H/2)
-        #
-        # Classes must be Nx1 NumPy Tensor, one scalar entryx per detection
-        # For each corresponding detection, the following mapping must be used
-        #   0: Ball
-        #   1: GoalKeeper
-        #   2: Player
-        #   3: Referee
+        image = data["image"]
+        if self.model is None:
+            self.initialise_yolo()
+
+        results = self.model(image)[0]
+        if results.boxes is None or len(results.boxes) == 0:
+            return {
+            "detections": np.empty((0, 4), dtype=np.float32),
+            "classes": np.empty((0, 1), dtype=np.int64)
+            }
+
+        boxes = results.boxes.xywh.cpu().numpy()   # Center-based boxes: (X, Y, W, H)
+        classes = results.boxes.cls.cpu().numpy()  # Klassen
+
+        valid_classes = [0, 1, 2, 3]
+        indices = [i for i, cls in enumerate(classes) if int(cls) in valid_classes]
+
+        if not indices:
+            return {
+            "detections": np.empty((0, 4), dtype=np.float32),
+            "classes": np.empty((0, 1), dtype=np.int64)
+            }
+
+        detections = np.array([boxes[i] for i in indices], dtype=np.float32)
+        class_tensor = np.array([[int(classes[i])] for i in indices], dtype=np.int64)
 
         return {
-            "detections": None,
-            "classes": None
+        "detections": detections,
+        "classes": class_tensor
         }
-    
-    def initialise_yolo():
-        model = YOLO("yolo11n.pt")
-        results = model("path_to_video.mp4")
-        results.show()  
