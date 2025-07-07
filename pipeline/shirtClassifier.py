@@ -62,10 +62,8 @@ class ShirtClassifier:
             return {
                 "teamAColor": None,
                 "teamBColor": None,
-                "teamClasses": [0 for _ in data["tracks"]]
+                "teamClasses": [0 for _ in tracks]
             }
-
-        team_classes = [0] * len(tracks)
 
         if self.teamAColor is None or self.teamBColor is None:
             colors = np.array([color for _, color in shirt_colors])
@@ -81,7 +79,13 @@ class ShirtClassifier:
             else:
                 self.teamAColor = kmeans.cluster_centers_[1]
                 self.teamBColor = kmeans.cluster_centers_[0]
-                
+
+            print("Fixed team colors:")
+            print("Team A Color:", self.teamAColor)
+            print("Team B Color:", self.teamBColor)
+
+        team_classes = [0] * len(tracks)
+
         for i, color in shirt_colors:
             distA = np.linalg.norm(color - self.teamAColor)
             distB = np.linalg.norm(color - self.teamBColor)
@@ -90,11 +94,33 @@ class ShirtClassifier:
             else:
                 team_classes[i] = 1 if distA < distB else 2
 
-        # print("[ShirtClassifier] Spieler gefunden:", player_indices)
-        # print("Frame received")
-        # print("Number of tracks:", len(tracks))
+            # Debug output
+            print(f"Player {i}: Color {color}, Dist A: {distA:.1f}, Dist B: {distB:.1f}, Class: {team_classes[i]}")
+
+        # UI visibility fix: ensure at least one player per team
+        num_team1 = team_classes.count(1)
+        num_team2 = team_classes.count(2)
+
+        if num_team1 == 0 and num_team2 > 0:
+            for i in range(len(team_classes)):
+                if team_classes[i] == 2:
+                    team_classes[i] = 1
+                    print("UI Fix: Flipped one Team B player to Team A")
+                    break
+        elif num_team2 == 0 and num_team1 > 0:
+            for i in range(len(team_classes)):
+                if team_classes[i] == 1:
+                    team_classes[i] = 2
+                    print("UI Fix: Flipped one Team A player to Team B")
+                    break
+
+        # Convert team class 2 → -1 for UI compatibility
+        team_classes_ui = [(-1 if c == 2 else c) for c in team_classes]
+        print("TeamClasses (raw):", team_classes)
+        print("TeamClasses (UI):", team_classes_ui)
+
         return {
             "teamAColor": tuple(map(int, self.teamAColor)),
             "teamBColor": tuple(map(int, self.teamBColor)),
-            "teamClasses": team_classes
+            "teamClasses": team_classes_ui
         }
