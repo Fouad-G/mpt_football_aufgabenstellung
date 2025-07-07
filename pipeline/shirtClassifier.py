@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 from sklearn.cluster import KMeans
 
+
 class ShirtClassifier:
     """
     A module that classifies players into two teams based on shirt color.
@@ -55,7 +56,9 @@ class ShirtClassifier:
         """
         image = data["image"]
         tracks = data["tracks"]
-        track_classes = data.get("trackClasses", [2] * len(tracks))  # Default to all players if missing
+        track_classes = data.get(
+            "trackClasses", [2] * len(tracks)
+        )  # Default to all players if missing
 
         # Identify indices of all player-class tracks (class == 2)
         player_indices = [i for i, cls in enumerate(track_classes) if cls == 2]
@@ -82,7 +85,7 @@ class ShirtClassifier:
             return {
                 "teamAColor": None,
                 "teamBColor": None,
-                "teamClasses": [0] * len(tracks)
+                "teamClasses": [0] * len(tracks),
             }
 
         # If team colors are not yet set, perform clustering using KMeans
@@ -128,5 +131,5 @@ class ShirtClassifier:
         return {
             "teamAColor": tuple(map(int, self.teamAColor)),
             "teamBColor": tuple(map(int, self.teamBColor)),
-            "teamClasses": team_classes_ui
+            "teamClasses": team_classes_ui,
         }
