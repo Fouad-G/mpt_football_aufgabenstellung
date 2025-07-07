@@ -60,5 +60,25 @@ class OpticalFlow:
             frame = cv.flip(frame, 1)
 
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        
+        if self.prev_gray is None:
+            self.prev_gray = gray
+            return {"opticalFlow": np.zeros((1, 2), dtype=np.float32)}
 
-
+        if self.use_gpu:
+            try:
+                d_prev = cv.cuda_GpuMat(); d_prev.upload(self.prev_gray)
+                d_curr = cv.cuda_GpuMat(); d_curr.upload(gray)
+                d_flow = self.gpu_flow.calc(d_prev, d_curr, None)
+                flow = d_flow.download()
+            except Exception:
+                self.use_gpu = False
+                flow = cv.calcOpticalFlowFarneback(
+                    self.prev_gray, gray,
+                    None, 0.5, 5, 15, 3, 5, 1.2, 0
+                )
+        else:
+            flow = cv.calcOpticalFlowFarneback(
+                self.prev_gray, gray,
+                None, 0.5, 5, 15, 3, 5, 1.2, 0
+            )
