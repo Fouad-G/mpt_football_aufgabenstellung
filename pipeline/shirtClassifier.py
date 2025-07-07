@@ -10,38 +10,18 @@ class ShirtClassifier:
         self.teamBColor = None
 
     def start(self, data):
-        # TODO: Implement start up procedure of the module
-        print("[ShirtClassifier] Module started.")
         self.initialized = True
 
     def stop(self, data):
-        # TODO: Implement shut down procedure of the module
-        print("[ShirtClassifier] Module stopped.")
         self.initialized = False
 
     def step(self, data):
-        # TODO: Implement processing of a current frame list
-        # The task of the shirt classifier module is to identify the two teams based on their shirt color and to assign each player to one of the two teams
-
-        # Note: You can access data["image"] and data["tracks"] to receive the current image as well as the current track list
-        # You must return a dictionary with the given fields:
-        #       "teamAColor":       A 3-tuple (B, G, R) containing the blue, green and red channel values (between 0 and 255) for team A
-        #       "teamBColor":       A 3-tuple (B, G, R) containing the blue, green and red channel values (between 0 and 255) for team B
-        #       "teamClasses"       A list with an integer class for each track according to the following mapping:
-        #           0: Team not decided or not a player (e.g. ball, goal keeper, referee)
-        #           1: Player belongs to team A
-        #           2: Player belongs to team B
-
         image = data["image"]
         tracks = data["tracks"]
-        track_classes = data.get("trackClasses", [2] * len(tracks))  # fallback falls nicht gesetzt
+        track_classes = data.get("trackClasses", [2] * len(tracks))  # fallback if not provided
 
-        player_indices = []
+        player_indices = [i for i, cls in enumerate(track_classes) if cls == 2]
         shirt_colors = []
-
-        for i, cls in enumerate(track_classes):
-            if cls == 2:
-                player_indices.append(i)
 
         for i in player_indices:
             x, y, w, h = tracks[i].astype(int)
@@ -62,7 +42,7 @@ class ShirtClassifier:
             return {
                 "teamAColor": None,
                 "teamBColor": None,
-                "teamClasses": [0 for _ in tracks]
+                "teamClasses": [0] * len(tracks)
             }
 
         if self.teamAColor is None or self.teamBColor is None:
@@ -70,54 +50,34 @@ class ShirtClassifier:
             kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(colors)
             labels = kmeans.labels_
 
-            count0 = np.sum(labels == 0)
-            count1 = np.sum(labels == 1)
-
-            if count0 >= count1:
-                self.teamAColor = kmeans.cluster_centers_[0]
-                self.teamBColor = kmeans.cluster_centers_[1]
+            if np.sum(labels == 0) >= np.sum(labels == 1):
+                self.teamAColor, self.teamBColor = kmeans.cluster_centers_
             else:
-                self.teamAColor = kmeans.cluster_centers_[1]
-                self.teamBColor = kmeans.cluster_centers_[0]
-
-            print("Fixed team colors:")
-            print("Team A Color:", self.teamAColor)
-            print("Team B Color:", self.teamBColor)
+                self.teamBColor, self.teamAColor = kmeans.cluster_centers_
 
         team_classes = [0] * len(tracks)
 
         for i, color in shirt_colors:
             distA = np.linalg.norm(color - self.teamAColor)
             distB = np.linalg.norm(color - self.teamBColor)
+
             if min(distA, distB) > 100:
                 team_classes[i] = 0
             else:
                 team_classes[i] = 1 if distA < distB else 2
 
-            # Debug output
-            print(f"Player {i}: Color {color}, Dist A: {distA:.1f}, Dist B: {distB:.1f}, Class: {team_classes[i]}")
-
-        # UI visibility fix: ensure at least one player per team
-        num_team1 = team_classes.count(1)
-        num_team2 = team_classes.count(2)
-
-        if num_team1 == 0 and num_team2 > 0:
-            for i in range(len(team_classes)):
-                if team_classes[i] == 2:
+        if team_classes.count(1) == 0 and team_classes.count(2) > 0:
+            for i, c in enumerate(team_classes):
+                if c == 2:
                     team_classes[i] = 1
-                    print("UI Fix: Flipped one Team B player to Team A")
                     break
-        elif num_team2 == 0 and num_team1 > 0:
-            for i in range(len(team_classes)):
-                if team_classes[i] == 1:
+        elif team_classes.count(2) == 0 and team_classes.count(1) > 0:
+            for i, c in enumerate(team_classes):
+                if c == 1:
                     team_classes[i] = 2
-                    print("UI Fix: Flipped one Team A player to Team B")
                     break
 
-        # Convert team class 2 → -1 for UI compatibility
         team_classes_ui = [(-1 if c == 2 else c) for c in team_classes]
-        print("TeamClasses (raw):", team_classes)
-        print("TeamClasses (UI):", team_classes_ui)
 
         return {
             "teamAColor": tuple(map(int, self.teamAColor)),
