@@ -70,13 +70,18 @@ class ShirtClassifier:
         if self.teamAColor is None or self.teamBColor is None:
             colors = np.array([color for _, color in shirt_colors])
             kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(colors)
-            c0, c1 = kmeans.cluster_centers_
+            labels = kmeans.labels_
 
-            if np.sum(c0) < np.sum(c1):
-                self.teamAColor, self.teamBColor = c0, c1
+            count0 = np.sum(labels == 0)
+            count1 = np.sum(labels == 1)
+
+            if count0 >= count1:
+                self.teamAColor = kmeans.cluster_centers_[0]
+                self.teamBColor = kmeans.cluster_centers_[1]
             else:
-                self.teamAColor, self.teamBColor = c1, c0
-
+                self.teamAColor = kmeans.cluster_centers_[1]
+                self.teamBColor = kmeans.cluster_centers_[0]
+                
         for i, color in shirt_colors:
             distA = np.linalg.norm(color - self.teamAColor)
             distB = np.linalg.norm(color - self.teamBColor)
