@@ -14,23 +14,35 @@ class OpticalFlow:
         self.scale_factor = scale_factor
         self.mirror = mirror
         self.use_gpu = use_gpu    
-
+        
     def start(self, data):
         self.prev_gray = None
 
     def stop(self, data):
         self.prev_gray = None
 
-    def step(self, data):
-        # TODO: Implement processing of a single frame
-        # The task of the optical flow module is to determine the overall avergae pixel shift between this and the previous image. 
-        # You 
-#
-        # Note: You can access data["image"] to receive the current image
-        # Return a dictionary with the motion vector between this and the last frame
-     #   #
-        # The "opticalFlow" signal must contain a 1x2 NumPy Array with the X and Y shift (delta values in pixels) of the image motion vector
-        return {
-           "opticalFlow": None
-        }
+def step(self, data):
+    frame = data.get("image", None)
+    if frame is None:
+        return {"opticalFlow": None}
+
+    if self.scale_factor != 1.0:
+        frame = cv.resize(frame, (0, 0), fx=self.scale_factor, fy=self.scale_factor)
+
+    if self.mirror:
+        frame = cv.flip(frame, 1)
+
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+
+    if self.prev_gray is None:
+        self.prev_gray = gray
+        return {"opticalFlow": np.array([[0.0, 0.0]])}
+
+    flow = cv.calcOpticalFlowFarneback(
+        self.prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0
+    )
+    avg_flow = np.mean(flow, axis=(0, 1)) / self.scale_factor
+    self.prev_gray = gray
+
+    return {"opticalFlow": avg_flow.reshape(1, 2)}
 
