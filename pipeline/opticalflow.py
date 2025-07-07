@@ -82,3 +82,7 @@ class OpticalFlow:
                 self.prev_gray, gray,
                 None, 0.5, 5, 15, 3, 5, 1.2, 0
             )
+        
+        avg_flow = np.mean(flow, axis=(0, 1)).reshape(1, 2) / self.scale_factor
+        self.prev_gray = gray
+        return {"opticalFlow": avg_flow}
