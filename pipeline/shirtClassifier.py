@@ -21,6 +21,8 @@ class ShirtClassifier:
         self.initialized = False
         self.teamAColor = None  # Mean color of Team A
         self.teamBColor = None  # Mean color of Team B
+        self.colorTuningEnabled = True  # set to False to disable color tuning
+
 
     def start(self, data):
         """
@@ -127,8 +129,37 @@ class ShirtClassifier:
         # Convert Team B (2) to -1 for UI compatibility
         team_classes_ui = [(-1 if c == 2 else c) for c in team_classes]
 
+        def enhance_color_dynamic(color):
+            """
+            Enhance the dominant color channel (red or blue) 
+            to make the team color more visually distinguishable.
+
+            Only the dominant channel is boosted by a fixed amount.
+            Green remains unchanged.
+            """
+            b, g, r = color
+            b, g, r = int(b), int(g), int(r)
+
+            # Boost red if it's more dominant than blue
+            if r > b:
+                r = min(r + 30, 255)
+            # Boost blue if it's more dominant than red
+            elif b > r:
+                b = min(b + 30, 255)
+
+            return (b, g, r)
+
+        # Apply dynamic team color enhancement if enabled
+        if self.colorTuningEnabled:
+            teamA_color = enhance_color_dynamic(self.teamAColor)
+            teamB_color = enhance_color_dynamic(self.teamBColor)
+        else:
+            teamA_color = tuple(map(int, self.teamAColor))
+            teamB_color = tuple(map(int, self.teamBColor))
+
+        # Return final team colors and player classifications
         return {
-            "teamAColor": tuple(map(int, self.teamAColor)),
-            "teamBColor": tuple(map(int, self.teamBColor)),
-            "teamClasses": team_classes_ui,
+            "teamAColor": teamA_color,
+            "teamBColor": teamB_color,
+            "teamClasses": team_classes_ui
         }
