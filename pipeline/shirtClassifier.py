@@ -21,8 +21,7 @@ class ShirtClassifier:
         self.initialized = False
         self.teamAColor = None  # Mean color of Team A
         self.teamBColor = None  # Mean color of Team B
-        self.colorTuningEnabled = True  # set to False to disable color tuning
-
+        self.colorTuningEnabled = False  # set to True to enable color tuning
 
     def start(self, data):
         """
@@ -95,11 +94,26 @@ class ShirtClassifier:
             kmeans = KMeans(n_clusters=2, n_init="auto", random_state=42).fit(colors)
             labels = kmeans.labels_
 
-            # Assign the more frequent cluster to Team A
-            if np.sum(labels == 0) >= np.sum(labels == 1):
-                self.teamAColor, self.teamBColor = kmeans.cluster_centers_
+            # Get average x-positions of players per cluster to determine left/right dominance
+            positions = [
+                tracks[i][0] for i, (_, color) in zip(player_indices, shirt_colors)
+            ]
+            positions = np.array(positions)
+
+            cluster0_x = np.mean(
+                [x for x, label in zip(positions, labels) if label == 0]
+            )
+            cluster1_x = np.mean(
+                [x for x, label in zip(positions, labels) if label == 1]
+            )
+
+            # Assign teamA to the cluster further left (smaller average x)
+            if cluster0_x <= cluster1_x:
+                self.teamAColor = kmeans.cluster_centers_[0]
+                self.teamBColor = kmeans.cluster_centers_[1]
             else:
-                self.teamBColor, self.teamAColor = kmeans.cluster_centers_
+                self.teamAColor = kmeans.cluster_centers_[1]
+                self.teamBColor = kmeans.cluster_centers_[0]
 
         # Initialize all tracks as undecided
         team_classes = [0] * len(tracks)
@@ -131,12 +145,12 @@ class ShirtClassifier:
 
         def enhance_color_dynamic(color):
             """
-            Enhance the dominant color channel (red or blue) 
-            to make the team color more visually distinguishable.
+            Enhances the dominant color (red or blue) for better visual distinction in UI.
 
-            Only the dominant channel is boosted by a fixed amount.
-            Green remains unchanged.
+            If red is dominant, red is increased; if blue is dominant, blue is increased.
+            Green is left unchanged.
             """
+
             b, g, r = color
             b, g, r = int(b), int(g), int(r)
 
@@ -161,5 +175,5 @@ class ShirtClassifier:
         return {
             "teamAColor": teamA_color,
             "teamBColor": teamB_color,
-            "teamClasses": team_classes_ui
+            "teamClasses": team_classes_ui,
         }
