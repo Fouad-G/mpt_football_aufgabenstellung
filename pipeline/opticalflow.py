@@ -63,7 +63,7 @@ class OpticalFlow:
         
         if self.prev_gray is None:
             self.prev_gray = gray
-            return {"opticalFlow": np.zeros((1, 2), dtype=np.float32)}
+            return {"opticalFlow": np.zeros((2,), dtype=np.float32)}
 
         if self.use_gpu:
             try:
@@ -83,6 +83,6 @@ class OpticalFlow:
                 None, 0.5, 5, 15, 3, 5, 1.2, 0
             )
         
-        avg_flow = np.mean(flow, axis=(0, 1)).reshape(1, 2) / self.scale_factor
+        avg_flow = np.mean(flow, axis=(0, 1)) / self.scale_factor
         self.prev_gray = gray
         return {"opticalFlow": avg_flow}
