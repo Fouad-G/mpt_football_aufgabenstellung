@@ -1,68 +1,89 @@
 from ultralytics import YOLO
+import torch
 import numpy as np
+import os
+
 
 class Detector:
-    def __init__(self, model_path="yolov8m-football.pt", conf_threshold=0.1):
+    def __init__(self):
+        """Initialize the Detector class.
+        This class is responsible for loading the YOLO model and processing images to detect objects.
+        """
         self.name = "Detector"
-        self.model_path = model_path
-        self.conf_threshold = conf_threshold
+        self.model = None
+
+    def initialise_yolo(self):
+        """Load the YOLO model from a specified path.
+        Raises:
+            FileNotFoundError: If the model file does not exist at the specified path.
+        """
+        # Automatische Modellwahl basierend auf Verfügbarkeit einer GPU
+        model_path = (
+            "yolov8m-football.pt"
+            if torch.cuda.is_available()
+            else "yolov8n-football.pt"
+        )
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(
+                f"Model file {model_path} not found. Please download it."
+            )
+        self.model = YOLO(model_path)
 
     def start(self, data):
-        self.model = YOLO(self.model_path)
+        """Start the Detector by initializing the YOLO model.
+        Args:
+            data (dict): Input data, not used in this method but required for compatibility with the pipeline.
+        """
+        if self.model is None:
+            self.initialise_yolo()
 
     def stop(self, data):
-        pass  # nichts nötig
+        """Stop the Detector by clearing the model.
+        Args:
+            data (dict): Input data, not used in this method but required for compatibility with the pipeline.
+        """
+        self.model = None
 
     def step(self, data):
+        """Process a single step of the pipeline.
+        Args:
+            data (dict): Input data containing the image to be processed.
+        Returns:
+            dict: A dictionary containing the detections and their corresponding classes.
+        """
         image = data["image"]
-        results = self.model.predict(image, verbose=False)
-        boxes = results[0].boxes
+        if self.model is None:
+            self.initialise_yolo()
 
-        detections = []
-        classes = []
+        results = self.model(image)[0]
+        if results.boxes is None or len(results.boxes) == 0:
+            return {
+                "detections": np.empty((0, 4), dtype=np.float32),
+                "classes": np.empty((0, 1), dtype=np.int64),
+            }
 
-        for box in boxes:
-            cls = int(box.cls)
-            conf = float(box.conf)
-            if conf < self.conf_threshold:
-                continue
+        boxes = results.boxes.xywh.cpu().numpy()  # Center-based boxes: (X, Y, W, H)
+        classes = results.boxes.cls.cpu().numpy()  # Klassen
 
-            if cls in [0, 1, 2, 3]:
-                mapped_cls = cls
-            else:
-                continue
+        valid_classes = [
+            0,
+            1,
+            2,
+            3,
+        ]  # Valid classes: 0=Ball, 1=Player, 2=Referee, 3=Goalkeeper
+        # Filter indices for valid classes
+        indices = [i for i, cls in enumerate(classes) if int(cls) in valid_classes]
 
-            xywh = box.xywh[0].cpu().numpy()
-            detections.append(xywh)
-            classes.append(mapped_cls)
+        # If no valid detections, return empty arrays
+        if not indices:
+            return {
+                "detections": np.empty((0, 4), dtype=np.float32),
+                "classes": np.empty((0, 1), dtype=np.int64),
+            }
 
-        if detections:
-            detections = np.stack(detections)
-            classes = np.array(classes).reshape(-1)
-        else:
-            detections = np.zeros((0, 4))
-            classes = np.zeros((0,), dtype=int)
+        # Extract the filtered detections and their corresponding classes
+        detections = np.array([boxes[i] for i in indices], dtype=np.float32)
+        class_tensor = np.array([[int(classes[i])] for i in indices], dtype=np.int64)
 
-        return {
-            "detections": detections,
-            "classes": classes
-        }
-
-        # TODO: Implement processing of a single frame
-        # The task of the detector is to detect the ball, the goal keepers, the players and the referees if visible.
-        # A bounding box needs to be defined for each detected object including the objects center position (X,Y) and its width and height (W, H) 
-        # You can return an arbitrary number of objects 
-        
-        # Note: You can access data["image"] to receive the current image
-        # Return a dictionary with detections and classes
-        #
-        # Detections must be a Nx4 NumPy Tensor, one 4-dimensional vector per detection
-        # The detection vector itself is encoded as (X, Y, W, H), so X and Y coordinate first, then width and height of each detection box.
-        # X and Y coordinates are the center point of the object, so the bounding box is drawn from (X - W/2, Y - H/2) to (X + W/2, Y + H/2)
-        #
-        # Classes must be Nx1 NumPy Tensor, one scalar entryx per detection
-        # For each corresponding detection, the following mapping must be used
-        #   0: Ball
-        #   1: GoalKeeper
-        #   2: Player
-        #   3: Referee
+        return {"detections": detections, "classes": class_tensor}
+      
