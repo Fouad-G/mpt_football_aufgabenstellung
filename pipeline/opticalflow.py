@@ -44,7 +44,7 @@ class OpticalFlow:
         """
         Verarbeitet ein Bild und gibt den durchschnittlichen Bewegungsvektor zurück.
         :param data: Dictionary mit dem Schlüssel 'image' für das BGR-Bild.
-        :return: {'opticalFlow': 1x2 np.ndarray oder None}
+        :return: dict {'opticalFlow': np.ndarray der Form (2,) oder None}
         """
         frame = data.get("image")
         if frame is None:
