@@ -86,4 +86,3 @@ class Detector:
         class_tensor = np.array([[int(classes[i])] for i in indices], dtype=np.int64)
 
         return {"detections": detections, "classes": class_tensor}
-      
