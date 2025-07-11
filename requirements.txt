@@ -2,4 +2,6 @@ numpy
 scikit-learn
 torch
 ultralytics
+opencv-python
+scipy
 os
