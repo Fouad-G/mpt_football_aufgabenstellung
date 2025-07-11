@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+
 # Berechnet IoU (Intersection over Union) zwischen zwei Mengen an Bounding Boxes
 def iou_matrix(boxes1, boxes2):
     if len(boxes1) == 0 or len(boxes2) == 0:
@@ -25,12 +26,13 @@ def iou_matrix(boxes1, boxes2):
     union = area_a[:, None] + area_b[None] - inter
     return inter / np.clip(union, 1e-6, None)
 
+
 class Filter:
-    _next_id = 0   # globale ID-Nummer
+    _next_id = 0  # globale ID-Nummer
 
     def __init__(self, bbox, obj_class):
-        self.state = bbox.astype(float)       # [cx, cy, w, h]
-        self.velocity = np.zeros(2)           # [vx, vy]
+        self.state = bbox.astype(float)  # [cx, cy, w, h]
+        self.velocity = np.zeros(2)  # [vx, vy]
         self.cls = int(obj_class)
         self.age = 1
         self.missing = 0
@@ -54,13 +56,14 @@ class Filter:
     def to_bbox(self):
         return self.state.copy()
 
+
 class Tracker:
     def __init__(self, iou_threshold=0.3):
         self.tracks = []
         self.iou_threshold = iou_threshold
         self.max_missing = {0: 1, 1: 5, 2: 5, 3: 5}
         self.vmax = {0: 120, 1: 50, 2: 50, 3: 50}
-        self.name="Tracker"
+        self.name = "Tracker"
 
     def start(self, data):
         self.tracks = []
@@ -75,7 +78,7 @@ class Tracker:
         image = data.get("image", np.zeros((1080, 1920, 3)))
         h, w = image.shape[:2]
 
-        # 1. Vorhersage 
+        # 1. Vorhersage
         for tr in self.tracks:
             tr.predict(flow)
 
@@ -84,11 +87,13 @@ class Tracker:
         cost = np.ones((len(self.tracks), len(detections)))
         if len(predicted) > 0 and len(detections) > 0:
             ious = iou_matrix(predicted, detections)
-            dist = np.linalg.norm(predicted[:, None, :2] - detections[None, :, :2], axis=2)
+            dist = np.linalg.norm(
+                predicted[:, None, :2] - detections[None, :, :2], axis=2
+            )
             mask = dist < 160
             cost[mask] = 1 - ious[mask]
 
-        # 3. Matching mit Hungarian 
+        # 3. Matching mit Hungarian
         matches = []
         unmatched_tracks = set(range(len(self.tracks)))
         unmatched_dets = set(range(len(detections)))
@@ -96,7 +101,10 @@ class Tracker:
         if cost.size:
             r, c = linear_sum_assignment(cost)
             for tr_idx, det_idx in zip(r, c):
-                if cost[tr_idx, det_idx] < (1 - self.iou_threshold) and self.tracks[tr_idx].cls == classes[det_idx]:
+                if (
+                    cost[tr_idx, det_idx] < (1 - self.iou_threshold)
+                    and self.tracks[tr_idx].cls == classes[det_idx]
+                ):
                     matches.append((tr_idx, det_idx))
                     unmatched_tracks.discard(tr_idx)
                     unmatched_dets.discard(det_idx)
@@ -105,11 +113,12 @@ class Tracker:
         for tr_idx, det_idx in matches:
             self.tracks[tr_idx].update(detections[det_idx])
 
-        # 5. Neue Tracks erstellen 
+        # 5. Neue Tracks erstellen
         for di in unmatched_dets:
             if self.tracks:
                 best_iou = iou_matrix(
-                    detections[di:di+1], np.array([tr.to_bbox() for tr in self.tracks])
+                    detections[di : di + 1],
+                    np.array([tr.to_bbox() for tr in self.tracks]),
                 ).max()
                 if best_iou > 0.45:
                     continue
@@ -120,12 +129,14 @@ class Tracker:
         for tr in self.tracks:
             vmax = self.vmax.get(tr.cls, 50)
             tr.velocity = np.clip(tr.velocity, -vmax, vmax)
-            if not self._is_on_field(tr, w, h): continue
-            if tr.missing > self.max_missing.get(tr.cls, 5): continue
+            if not self._is_on_field(tr, w, h):
+                continue
+            if tr.missing > self.max_missing.get(tr.cls, 5):
+                continue
             alive.append(tr)
         self.tracks = alive
 
-        # 7. Ausgabe 
+        # 7. Ausgabe
         return {
             "tracks": np.array([tr.to_bbox() for tr in self.tracks]),
             "trackVelocities": np.array([tr.velocity for tr in self.tracks]),
